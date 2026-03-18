@@ -2,8 +2,16 @@ import { GoogleGenAI } from "@google/genai";
 
 const API_KEY = process.env.GEMINI_API_KEY || "";
 
+function validateApiKey() {
+  if (!API_KEY || API_KEY === "YOUR_API_KEY") {
+    console.error("GEMINI_API_KEY is missing or invalid in environment variables.");
+    return false;
+  }
+  return true;
+}
+
 export async function getOptimizationExplanation(instanceId: string, instanceType: string, cpu: number, action: string) {
-  if (!API_KEY) return "AI explanation unavailable (API Key missing).";
+  if (!validateApiKey()) return "AI explanation unavailable. Please configure GEMINI_API_KEY in Settings > Secrets.";
 
   const ai = new GoogleGenAI({ apiKey: API_KEY });
   const model = "gemini-3-flash-preview";
@@ -32,7 +40,7 @@ export async function getOptimizationExplanation(instanceId: string, instanceTyp
 }
 
 export async function askCloudCostQuestion(question: string, dataSummary: any) {
-  if (!API_KEY) return "AI chat unavailable (API Key missing).";
+  if (!validateApiKey()) return "AI chat unavailable. Please configure GEMINI_API_KEY in Settings > Secrets.";
 
   const ai = new GoogleGenAI({ apiKey: API_KEY });
   const model = "gemini-3-flash-preview";

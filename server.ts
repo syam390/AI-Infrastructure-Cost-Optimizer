@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import "dotenv/config";
 import { createServer as createViteServer } from "vite";
 import { analyzeInfrastructure } from "./src/server/optimizer";
 import { detectAnomalies } from "./src/server/anomaly_detector";

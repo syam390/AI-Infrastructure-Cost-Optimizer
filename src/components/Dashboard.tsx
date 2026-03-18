@@ -12,7 +12,8 @@ import {
   Cell,
   Legend
 } from 'recharts';
-import { TrendingDown, TrendingUp, ShieldCheck, DollarSign, AlertTriangle } from 'lucide-react';
+import { TrendingDown, TrendingUp, ShieldCheck, DollarSign, AlertTriangle, Download } from 'lucide-react';
+import Papa from 'papaparse';
 import { RecommendationCard } from './RecommendationCard';
 import { ChatAssistant } from './ChatAssistant';
 import { CostCharts } from './CostCharts';
@@ -41,6 +42,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ recommendations }) => {
   ];
 
   const anomalies = recommendations.filter(r => r.isAnomaly);
+
+  const handleExportCSV = () => {
+    const exportData = recommendations.map(r => ({
+      'Instance ID': r.instanceId,
+      'Instance Type': r.instanceType,
+      'CPU Avg (%)': r.cpu,
+      'Memory Avg (%)': r.memory,
+      'Current Cost ($)': r.currentCost,
+      'Action': r.action,
+      'Estimated Savings ($)': r.estimatedSavings,
+      'Optimized Cost ($)': r.optimizedCost,
+      'Status': r.status,
+      'Is Anomaly': r.isAnomaly ? 'Yes' : 'No'
+    }));
+
+    const csv = Papa.unparse(exportData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `infrastructure_optimization_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const dataSummary = {
     totalInstances: recommendations.length,
@@ -115,8 +143,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ recommendations }) => {
       {/* Recommendations List */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-zinc-100">Optimization Recommendations</h2>
-          <span className="text-sm text-zinc-500">{recommendations.length} instances analyzed</span>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-bold text-zinc-100">Optimization Recommendations</h2>
+            <span className="text-sm text-zinc-500">{recommendations.length} instances analyzed</span>
+          </div>
+          
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-xl border border-zinc-700 transition-all text-sm font-medium shadow-lg shadow-black/20"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export CSV</span>
+          </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {recommendations.map((rec) => (
