@@ -1,0 +1,11 @@
+Instance_ID,Instance_Type,CPU_Avg,Memory_Avg,Cost
+i-001,m5.large,12%,20%,$180
+i-002,c5.xlarge,70%,65%,$320
+i-003,t3.medium,8%,15%,$120
+i-004,m5.xlarge,5%,10%,$360
+i-005,r5.large,15%,80%,$250
+i-006,c5.large,85%,40%,$160
+i-007,t3.small,2%,5%,$60
+i-008,m5.2xlarge,18%,25%,$720
+i-009,c5.2xlarge,92%,88%,$640
+i-010,t3.large,22%,30%,$240

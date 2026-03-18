@@ -1,0 +1,5 @@
+{
+  "name": "AI Infrastructure Cost Optimizer",
+  "description": "Analyze cloud infrastructure usage and receive AI-powered recommendations to reduce costs using Gemini AI.",
+  "requestFramePermissions": []
+}
