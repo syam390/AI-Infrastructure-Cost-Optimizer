@@ -41,10 +41,16 @@ export const ChatAssistant: React.FC<ChatInterfaceProps> = ({ dataSummary }) => 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: userMessage, dataSummary })
       });
-      const { answer } = await response.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
-    } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error connecting to the FinOps engine." }]);
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || data.answer || "Sorry, I encountered an error connecting to the FinOps engine.");
+      }
+      
+      setMessages(prev => [...prev, { role: 'assistant', content: data.answer || "No response generated." }]);
+    } catch (error: any) {
+      setMessages(prev => [...prev, { role: 'assistant', content: error.message || "Sorry, I encountered an error connecting to the FinOps engine." }]);
     } finally {
       setIsLoading(false);
     }

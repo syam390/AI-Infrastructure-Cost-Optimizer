@@ -24,9 +24,12 @@ export const UploadData: React.FC<UploadDataProps> = ({ onDataLoaded }) => {
           return {
             Instance_ID: row.Instance_ID || 'Unknown',
             Instance_Type: row.Instance_Type || 'Unknown',
-            CPU_Avg: isNaN(cpu) ? 0 : cpu,
-            Memory_Avg: isNaN(memory) ? 0 : memory,
-            Cost: isNaN(cost) ? 0 : cost,
+            CPU_Avg: (cpu === null || isNaN(cpu)) ? 0 : cpu,
+            Memory_Avg: (memory === null || isNaN(memory)) ? 0 : memory,
+            Cost: (cost === null || isNaN(cost)) ? 0 : cost,
+            Environment: row.Environment || 'Development',
+            Critical: row.Critical || 'No',
+            Application_Name: row.Application_Name || 'Unknown App',
           };
         }) as any[];
         
@@ -57,6 +60,10 @@ export const UploadData: React.FC<UploadDataProps> = ({ onDataLoaded }) => {
         <div className="flex items-center gap-2 mt-4 px-4 py-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-xs">
           <FileText className="w-4 h-4" />
           <span>Required columns: Instance_ID, Instance_Type, CPU_Avg, Memory_Avg, Cost</span>
+        </div>
+        <div className="flex items-center gap-2 mt-2 px-4 py-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-xs">
+          <FileText className="w-4 h-4" />
+          <span>Optional columns: Environment, Critical, Application_Name</span>
         </div>
       </div>
     </div>

@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Cloud, RefreshCcw, LayoutDashboard, Database } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Cloud, RefreshCcw, LayoutDashboard, Database, Activity } from 'lucide-react';
 import { UploadData } from './components/UploadData';
 import { Dashboard } from './components/Dashboard';
+import { RealTimeMonitoring } from './components/RealTimeMonitoring';
 import { motion, AnimatePresence } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 
@@ -9,6 +10,72 @@ export default function App() {
   const [data, setData] = useState<any[] | null>(null);
   const [recommendations, setRecommendations] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dataSource, setDataSource] = useState<'upload' | 'realtime'>('upload');
+  const [realTimeMetrics, setRealTimeMetrics] = useState<any>(null);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (dataSource === 'realtime' && data) {
+      interval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/realtime');
+          const metrics = await res.json();
+          setRealTimeMetrics(metrics);
+          
+          const cpu = metrics.cpu || 0;
+          const memory = metrics.memory || 0;
+
+          // Update the instance data with new metrics
+          const updatedData = [
+            {
+              Instance_ID: 'local-node-01',
+              Instance_Type: 'bare-metal',
+              CPU_Avg: cpu,
+              Memory_Avg: memory,
+              Cost: 150,
+              Environment: 'Production',
+              Critical: 'Yes',
+              Application_Name: 'Core Services'
+            },
+            {
+              Instance_ID: 'dev-worker-01',
+              Instance_Type: 't3.medium',
+              CPU_Avg: cpu * 0.2, // Simulate low usage
+              Memory_Avg: memory * 0.5,
+              Cost: 45,
+              Environment: 'Development',
+              Critical: 'No',
+              Application_Name: 'Background Jobs'
+            },
+            {
+              Instance_ID: 'staging-web-01',
+              Instance_Type: 't3.large',
+              CPU_Avg: cpu * 0.4, // Simulate medium usage
+              Memory_Avg: memory * 0.8,
+              Cost: 85,
+              Environment: 'Staging',
+              Critical: 'No',
+              Application_Name: 'Frontend App'
+            }
+          ];
+          
+          const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: updatedData })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            setRecommendations(result.recommendations);
+          }
+        } catch (error) {
+          console.error("Real-time update failed:", error);
+        }
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [dataSource, data]);
 
   const handleDataLoaded = async (parsedData: any[]) => {
     setLoading(true);
@@ -39,6 +106,7 @@ export default function App() {
   const reset = () => {
     setData(null);
     setRecommendations(null);
+    setRealTimeMetrics(null);
   };
 
   return (
@@ -81,11 +149,38 @@ export default function App() {
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-emerald-400">infrastructure costs.</span>
                 </h1>
                 <p className="text-zinc-400 text-lg max-w-lg mx-auto leading-relaxed">
-                  Upload your infrastructure usage data and let our AI analyze over-provisioned resources to save up to 40% on your monthly bill.
+                  Upload your infrastructure usage data or monitor in real-time to let our AI analyze over-provisioned resources and save up to 40% on your monthly bill.
                 </p>
               </div>
 
-              <UploadData onDataLoaded={handleDataLoaded} />
+              <div className="flex justify-center gap-4 mb-4">
+                <button
+                  onClick={() => setDataSource('upload')}
+                  className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                    dataSource === 'upload' 
+                      ? 'bg-violet-600 text-white' 
+                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+                  }`}
+                >
+                  Upload Dataset
+                </button>
+                <button
+                  onClick={() => setDataSource('realtime')}
+                  className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                    dataSource === 'realtime' 
+                      ? 'bg-violet-600 text-white' 
+                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+                  }`}
+                >
+                  Real-Time Monitoring
+                </button>
+              </div>
+
+              {dataSource === 'upload' ? (
+                <UploadData onDataLoaded={handleDataLoaded} />
+              ) : (
+                <RealTimeMonitoring onDataLoaded={handleDataLoaded} />
+              )}
 
               {loading && (
                 <div className="flex items-center justify-center gap-3 text-violet-400">
@@ -121,10 +216,14 @@ export default function App() {
             >
               <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold tracking-tight">Infrastructure Analysis</h1>
-                <p className="text-zinc-500">Based on the uploaded dataset of {data.length} instances.</p>
+                <p className="text-zinc-500">
+                  {dataSource === 'realtime' 
+                    ? 'Real-time monitoring of local infrastructure.' 
+                    : `Based on the uploaded dataset of ${data.length} instances.`}
+                </p>
               </div>
               
-              {recommendations && <Dashboard recommendations={recommendations} />}
+              {recommendations && <Dashboard recommendations={recommendations} realTimeMetrics={realTimeMetrics} />}
             </motion.div>
           )}
         </AnimatePresence>

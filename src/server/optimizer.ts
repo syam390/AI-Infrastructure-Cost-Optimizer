@@ -4,6 +4,9 @@ export interface InstanceData {
   CPU_Avg: number;
   Memory_Avg: number;
   Cost: number;
+  Environment?: string;
+  Critical?: string;
+  Application_Name?: string;
 }
 
 export interface Recommendation {
@@ -16,6 +19,9 @@ export interface Recommendation {
   estimatedSavings: number;
   optimizedCost: number;
   status: 'Idle' | 'Over-provisioned' | 'Healthy';
+  riskLevel: 'Low' | 'Medium' | 'High';
+  manualApprovalStatus: string;
+  warning?: string;
 }
 
 export function analyzeInfrastructure(data: InstanceData[]): Recommendation[] {
@@ -23,6 +29,19 @@ export function analyzeInfrastructure(data: InstanceData[]): Recommendation[] {
     let action: 'Stop' | 'Downsize' | 'Reserved' | 'Archive' | 'No Change' = 'No Change';
     let status: 'Healthy' | 'Over-provisioned' | 'Idle' = 'Healthy';
     let estimatedSavings = 0;
+    let riskLevel: 'Low' | 'Medium' | 'High' = 'Low';
+    let warning: string | undefined;
+
+    const isCritical = item.Critical?.toLowerCase() === 'yes';
+    const isProd = item.Environment?.toLowerCase() === 'production';
+
+    if (isProd) {
+      riskLevel = 'High';
+    } else if (item.Environment?.toLowerCase() === 'staging') {
+      riskLevel = 'Medium';
+    } else {
+      riskLevel = 'Low';
+    }
 
     if (item.CPU_Avg < 10) {
       status = 'Idle';
@@ -42,6 +61,15 @@ export function analyzeInfrastructure(data: InstanceData[]): Recommendation[] {
       estimatedSavings = 0;
     }
 
+    // Safety Rules
+    if (isCritical && action === 'Stop') {
+      action = 'No Change';
+      estimatedSavings = 0;
+      warning = 'Critical instance - cannot be stopped automatically.';
+    } else if (isProd && action !== 'No Change') {
+      warning = 'Production environment - proceed with caution.';
+    }
+
     return {
       instanceId: item.Instance_ID,
       instanceType: item.Instance_Type,
@@ -51,7 +79,10 @@ export function analyzeInfrastructure(data: InstanceData[]): Recommendation[] {
       action,
       estimatedSavings,
       optimizedCost: item.Cost - estimatedSavings,
-      status
+      status,
+      riskLevel,
+      manualApprovalStatus: action !== 'No Change' ? 'Manual review required' : 'N/A',
+      warning
     };
   });
 }
